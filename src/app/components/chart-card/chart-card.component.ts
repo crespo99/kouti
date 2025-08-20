@@ -25,6 +25,7 @@ export interface DashboardCard {
   type: 'donut' | 'bar' | 'status' | 'summary';
   alerts?: AlertData[];
   summary?: SummaryData[];
+  centerLabel?: string; // Optional text to render at the center (for donuts)
 }
 
 interface DonutSegment {

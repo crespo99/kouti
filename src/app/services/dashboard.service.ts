@@ -39,11 +39,48 @@ export interface CollateralSettlementSummaryDto {
   failed: number;
 }
 
+// DTO for Interest Summary - up to today (per movement section)
+export interface InterestMovementSummaryDto {
+  movementName: string;
+  pending: number;
+  query: number;
+  authorised: number;
+  pendingRelease: number;
+  pendingSettlement: number;
+  outstandingSettlement: number;
+  sysDraft: number;
+  movementId: number;
+}
+
+// Map of section name to its summary
+export type InterestSummaryUpToTodayDto = Record<string, InterestMovementSummaryDto>;
+
+// DTO for Approvals Management counts
+export interface ApprovalManagerCountsDto {
+  newAgreementsSize: number;
+  amendedAgreementsSize: number;
+  amendedUmbrellaAgreementsSize: number;
+  amendedEligiRulesTempSize: number;
+  deletedEligiRulesTempSize: number;
+  newStatementsSize: number;
+  amendedStatementsSize: number;
+  pendApprovalStatementsSize: number;
+  progressStatementsSize: number;
+  staleStatementsSize: number;
+  amendedSettInstrsSize: number;
+  amendedSecuritiesDataSize: number;
+  amendedTotalTrades: number;
+  amendedOrgDataSize: number;
+  amendedWorkflowSize: number;
+}
+
 @Injectable({
   providedIn: 'root'
 })
 export class DashboardService {
   private readonly DASHBOARD_ENDPOINT = '/services/dashboard/settlementsummarycounts';
+  private readonly INTEREST_TODAY_ENDPOINT = '/services/dashboard/interestsummaryuptotodaycounts';
+  private readonly APPROVAL_MANAGER_ENDPOINT = '/services/dashboard/approvalmanagercounts';
 
   constructor(private apiService: ApiService) {}
 
@@ -92,6 +129,40 @@ export class DashboardService {
       }),
       catchError(error => {
         return throwError(() => new Error('Failed to load collateral settlement summary'));
+      })
+    );
+  }
+
+  /**
+   * Fetches Interest Summary - up to today DTO
+   */
+  getInterestSummaryUpToToday(): Observable<InterestSummaryUpToTodayDto> {
+    console.log(' [DashboardService] Fetching Interest Summary up to today:', this.INTEREST_TODAY_ENDPOINT);
+    return this.apiService.get<InterestSummaryUpToTodayDto>(this.INTEREST_TODAY_ENDPOINT).pipe(
+      tap({
+        next: (data) => console.debug('[DashboardService] Interest Summary Today data:', data),
+        error: (error) => console.error('[DashboardService] Interest Summary Today error:', error),
+        finalize: () => console.log(' [DashboardService] Interest Summary Today call completed')
+      }),
+      catchError(error => {
+        return throwError(() => new Error('Failed to load interest summary up to today'));
+      })
+    );
+  }
+
+  /**
+   * Fetches Approval Manager counts DTO
+   */
+  getApprovalManagerCounts(): Observable<ApprovalManagerCountsDto> {
+    console.log(' [DashboardService] Fetching Approval Manager counts:', this.APPROVAL_MANAGER_ENDPOINT);
+    return this.apiService.get<ApprovalManagerCountsDto>(this.APPROVAL_MANAGER_ENDPOINT).pipe(
+      tap({
+        next: (data) => console.debug('[DashboardService] Approval Manager counts data:', data),
+        error: (error) => console.error('[DashboardService] Approval Manager counts error:', error),
+        finalize: () => console.log(' [DashboardService] Approval Manager counts call completed')
+      }),
+      catchError(error => {
+        return throwError(() => new Error('Failed to load approval manager counts'));
       })
     );
   }

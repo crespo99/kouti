@@ -118,11 +118,18 @@
           [style.animation-delay]="'1.8s'">
         </app-chart-card>
 
-        <app-chart-card
-          [cardData]="interestSummaryTodayData"
-          class="transform hover:scale-105 transition-all duration-500 hover:rotate-1 animate-fade-in-up"
-          [style.animation-delay]="'2s'">
-        </app-chart-card>
+        <!-- Grid of donut charts per movement -->
+        <div class="space-y-6">
+          <h3 class="text-xl font-semibold text-slate-200">Interest Summary - up to today</h3>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <app-chart-card
+              *ngFor="let donut of interestSummaryTodayDonuts; let i = index"
+              [cardData]="donut"
+              class="transform hover:scale-105 transition-all duration-500 animate-fade-in-up"
+              [style.animation-delay]="(2 + i * 0.1) + 's'">
+            </app-chart-card>
+          </div>
+        </div>
       </div>
     </div>
 

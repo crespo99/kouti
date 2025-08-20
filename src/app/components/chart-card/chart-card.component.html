@@ -46,9 +46,21 @@
             />
           </svg>
           <div class="absolute inset-0 flex items-center justify-center">
-            <div class="text-center">
-              <div class="text-3xl font-bold text-gray-800">{{ getTotalValue() }}</div>
-              <div class="text-sm text-gray-500">Total</div>
+            <div class="text-center px-2">
+              <div *ngIf="cardData.centerLabel; else showTotal" class="flex flex-col items-center justify-center">
+                <div class="text-base font-semibold text-gray-700 leading-tight">
+                  {{ cardData.centerLabel }}
+                </div>
+                <div class="text-xs text-gray-500 mt-1">
+                  Total: {{ getTotalValue() }}
+                </div>
+              </div>
+              <ng-template #showTotal>
+                <div>
+                  <div class="text-3xl font-bold text-gray-800">{{ getTotalValue() }}</div>
+                  <div class="text-sm text-gray-500">Total</div>
+                </div>
+              </ng-template>
             </div>
           </div>
         </div>
