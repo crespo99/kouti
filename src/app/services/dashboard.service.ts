@@ -20,6 +20,25 @@ export interface ExternalExposureData {
   [key: string]: any;
 }
 
+// DTO for Collateral Settlement Summary
+export interface CollateralSettlementSummaryDto {
+  assetName: string;
+  sysDraft: number;
+  pending: number;
+  query: number;
+  authorised: number;
+  pendingRelease: number;
+  pendingSettlement: number;
+  outstandingSettlement: number;
+  corpActionDue: number;
+  assetCategory: number;
+  category: number;
+  isTSA: number;          // API uses 0/1; UI can coerce to boolean when needed
+  reverseFailed: number;
+  mirroredFailed: number;
+  failed: number;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -56,6 +75,23 @@ export class DashboardService {
       catchError(error => {
         console.log('[DashboardService] Error in API call:', error);
         return throwError(() => new Error('Failed to load dashboard data'));
+      })
+    );
+  }
+
+  /**
+   * Fetches Collateral Settlement Summary DTO
+   */
+  getCollateralSettlementSummary(): Observable<CollateralSettlementSummaryDto> {
+    console.log(' [DashboardService] Fetching Collateral Settlement Summary:', this.DASHBOARD_ENDPOINT);
+    return this.apiService.get<CollateralSettlementSummaryDto>(this.DASHBOARD_ENDPOINT).pipe(
+      tap({
+        next: (data) => console.debug('[DashboardService] Collateral Summary data:', data),
+        error: (error) => console.error('[DashboardService] Collateral Summary error:', error),
+        finalize: () => console.log(' [DashboardService] Collateral Summary call completed')
+      }),
+      catchError(error => {
+        return throwError(() => new Error('Failed to load collateral settlement summary'));
       })
     );
   }

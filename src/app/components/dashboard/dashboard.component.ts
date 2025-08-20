@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ChartCardComponent } from '../chart-card/chart-card.component';
 import { FilterBarComponent, FilterData } from '../filter-bar/filter-bar.component';
-import { DashboardService, ExternalExposureData } from '../../services/dashboard.service';
+import { DashboardService, ExternalExposureData, CollateralSettlementSummaryDto } from '../../services/dashboard.service';
 import { Subscription } from 'rxjs';
 
 export interface ChartData {
@@ -102,14 +102,14 @@ export class DashboardComponent implements OnInit, OnDestroy {
     type: 'summary',
     data: [],
     summary: [
-      { label: 'System Draft', value: 476, barColor: '#F3F4F6' },
-      { label: 'Pending', value: 630, barColor: '#FCA5A5' },
-      { label: 'Query', value: 2, barColor: '#F3F4F6' },
-      { label: 'Authorised', value: 1, barColor: '#F3F4F6' },
-      { label: 'Pending Release', value: 5, barColor: '#F3F4F6' },
-      { label: 'Pending Settlement', value: 331, barColor: '#DC2626' },
-      { label: 'Outstanding Settlement', value: 4, barColor: '#F3F4F6' },
-      { label: 'Failed', value: 12, barColor: '#374151' },
+      { label: 'System Draft', value: 0, barColor: '#F3F4F6' },
+      { label: 'Pending', value: 0, barColor: '#FCA5A5' },
+      { label: 'Query', value: 0, barColor: '#F3F4F6' },
+      { label: 'Authorised', value: 0, barColor: '#F3F4F6' },
+      { label: 'Pending Release', value: 0, barColor: '#F3F4F6' },
+      { label: 'Pending Settlement', value: 0, barColor: '#DC2626' },
+      { label: 'Outstanding Settlement', value: 0, barColor: '#F3F4F6' },
+      { label: 'Failed', value: 0, barColor: '#374151' },
       { label: 'Reverse Failed', value: 0, barColor: '#F3F4F6' },
       { label: 'Mirrored Failed', value: 0, barColor: '#F3F4F6' }
     ]
@@ -204,6 +204,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
           
           console.log('🔄 Updating dashboard with new data...');
           this.updateDashboardData(data);
+          // Fetch Collateral Settlement Summary in parallel to populate that card
+          this.fetchCollateralSettlementSummary();
           this.lastUpdated = new Date();
           this.isLoading = false;
           console.log('✅ Dashboard data updated successfully');
@@ -320,5 +322,36 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   getTotalSettlements(): number {
     return this.collateralSettlementData.summary?.reduce((sum, item) => sum + item.value, 0) || 0;
+  }
+
+  private fetchCollateralSettlementSummary(): void {
+    console.log('📡 Fetching Collateral Settlement Summary DTO...');
+    this.dashboardService.getCollateralSettlementSummary().subscribe({
+      next: (dto: CollateralSettlementSummaryDto) => {
+        console.log('✅ Collateral Settlement Summary DTO:', dto);
+        this.collateralSettlementData = {
+          ...this.collateralSettlementData,
+          summary: this.mapCollateralSummary(dto)
+        };
+      },
+      error: (err) => {
+        console.error('❌ Failed to fetch Collateral Settlement Summary:', err);
+      }
+    });
+  }
+
+  private mapCollateralSummary(dto: CollateralSettlementSummaryDto): SummaryData[] {
+    return [
+      { label: 'System Draft', value: dto.sysDraft ?? 0, barColor: '#F3F4F6' },
+      { label: 'Pending', value: dto.pending ?? 0, barColor: '#FCA5A5' },
+      { label: 'Query', value: dto.query ?? 0, barColor: '#F3F4F6' },
+      { label: 'Authorised', value: dto.authorised ?? 0, barColor: '#F3F4F6' },
+      { label: 'Pending Release', value: dto.pendingRelease ?? 0, barColor: '#F3F4F6' },
+      { label: 'Pending Settlement', value: dto.pendingSettlement ?? 0, barColor: '#DC2626' },
+      { label: 'Outstanding Settlement', value: dto.outstandingSettlement ?? 0, barColor: '#F3F4F6' },
+      { label: 'Failed', value: dto.failed ?? 0, barColor: '#374151' },
+      { label: 'Reverse Failed', value: dto.reverseFailed ?? 0, barColor: '#F3F4F6' },
+      { label: 'Mirrored Failed', value: dto.mirroredFailed ?? 0, barColor: '#F3F4F6' }
+    ];
   }
 }
