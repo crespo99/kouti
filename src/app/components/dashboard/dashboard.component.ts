@@ -3,6 +3,8 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ChartCardComponent } from '../chart-card/chart-card.component';
 import { FilterBarComponent, FilterData } from '../filter-bar/filter-bar.component';
+import { DashboardService, ExternalExposureData } from '../../services/dashboard.service';
+import { Subscription } from 'rxjs';
 
 export interface ChartData {
   label: string;
@@ -43,8 +45,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
   autoRefresh: boolean = false;
   nextRefresh: Date | null = null;
   private refreshInterval: any;
+  private dataSubscription: Subscription | null = null;
 
-  // Dashboard data
   callsRecallsData: DashboardCard = {
     title: 'Calls and Recalls',
     type: 'donut',
@@ -172,46 +174,104 @@ export class DashboardComponent implements OnInit, OnDestroy {
     ]
   };
 
+  constructor(private dashboardService: DashboardService) {}
+
   ngOnInit(): void {
     this.loadDashboardData();
   }
 
   ngOnDestroy(): void {
-    if (this.refreshInterval) {
-      clearInterval(this.refreshInterval);
+    this.stopAutoRefresh();
+    if (this.dataSubscription) {
+      this.dataSubscription.unsubscribe();
     }
   }
 
-  private loadDashboardData(): void {
-    // Simulate loading delay
-    setTimeout(() => {
-      this.isLoading = false;
-      this.lastUpdated = new Date();
-    }, 2000);
+  loadDashboardData(filters?: any): void {
+    console.log('🔄 Loading dashboard data...');
+    this.isLoading = true;
+    
+    console.log('📡 Making API call to external exposure endpoint...');
+    this.dataSubscription = this.dashboardService.getExternalExposureData()
+      .subscribe({
+        next: (data: ExternalExposureData) => {
+          console.log('✅ API Response:', data);
+          
+          if (!data) {
+            console.warn('⚠️ Received empty or null data from API');
+            return;
+          }
+          
+          console.log('🔄 Updating dashboard with new data...');
+          this.updateDashboardData(data);
+          this.lastUpdated = new Date();
+          this.isLoading = false;
+          console.log('✅ Dashboard data updated successfully');
+          
+          // Start auto-refresh if enabled
+          if (this.autoRefresh) {
+            console.log('🔄 Auto-refresh is enabled, scheduling next update...');
+            this.startAutoRefresh();
+          }
+        },
+        error: (error) => {
+          console.log('❌ Error loading dashboard data:', error);
+          console.log('Error details:', {
+            status: error.status,
+            message: error.message,
+            url: error.url,
+            name: error.name
+          });
+          this.isLoading = false;
+          // TODO: Show error message to user
+        },
+        complete: () => {
+          console.log('🏁 API call completed');
+        }
+      });
+  }
+
+  updateDashboardData(apiData: ExternalExposureData): void {
+    // Update the dashboard cards with data from the API
+    if (apiData.callsRecalls) {
+      this.callsRecallsData = {
+        title: 'Calls and Recalls',
+        type: 'donut',
+        data: [
+          { label: 'Awaiting Action', value: apiData.callsRecalls.awaitingAction || 0, color: '#EF4444' },
+          { label: 'Processing Call', value: apiData.callsRecalls.processing || 0, color: '#9CA3AF' },
+          { label: 'Call Past Notification Time', value: apiData.callsRecalls.pastNotification || 0, color: '#7C2D12' }
+        ]
+      };
+    }
+
+    // Update other dashboard cards similarly when you have the actual API response structure
+    // Example for deliveriesReturns (uncomment and update when you have the actual structure):
+    /*
+    if (apiData.deliveriesReturns) {
+      this.deliveriesReturnsData = {
+        title: 'Deliveries and Returns',
+        type: 'donut',
+        data: [
+          { label: 'Awaiting Action', value: apiData.deliveriesReturns.awaitingAction || 0, color: '#EF4444' },
+          { label: 'Processing Call', value: apiData.deliveriesReturns.processing || 0, color: '#9CA3AF' },
+          { label: 'Call Past Notification Time', value: apiData.deliveriesReturns.pastNotification || 0, color: '#7C2D12' }
+        ]
+      };
+    }
+    */
   }
 
   onFiltersApplied(filters: FilterData): void {
-    console.log('Filters applied in dashboard:', filters);
-    this.isLoading = true;
-
-    // Simulate API call with filters
-    setTimeout(() => {
-      this.loadDashboardData();
-      // Here you would typically call your service to fetch filtered data
-    }, 1000);
+    this.loadDashboardData(filters);
   }
 
   onFiltersReset(): void {
-    console.log('Filters reset in dashboard');
-    this.isLoading = true;
-
-    // Reload default data
-    setTimeout(() => {
-      this.loadDashboardData();
-    }, 500);
+    this.loadDashboardData();
   }
 
   toggleAutoRefresh(): void {
+    this.autoRefresh = !this.autoRefresh;
     if (this.autoRefresh) {
       this.startAutoRefresh();
     } else {
@@ -220,28 +280,24 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   private startAutoRefresh(): void {
-    this.updateNextRefreshTime();
+    // Refresh every 5 minutes (300000 ms)
     this.refreshInterval = setInterval(() => {
-      this.refreshData();
-      this.updateNextRefreshTime();
-    }, 30000); // Refresh every 30 seconds
+      this.loadDashboardData();
+    }, 300000);
+    this.updateNextRefreshTime();
   }
 
   private stopAutoRefresh(): void {
     if (this.refreshInterval) {
       clearInterval(this.refreshInterval);
+      this.refreshInterval = null;
       this.nextRefresh = null;
     }
   }
 
   private updateNextRefreshTime(): void {
-    this.nextRefresh = new Date(Date.now() + 30000);
-  }
-
-  private refreshData(): void {
-    console.log('Auto-refreshing dashboard data...');
-    this.lastUpdated = new Date();
-    // Here you would call your service to refresh data
+    const now = new Date();
+    this.nextRefresh = new Date(now.getTime() + 300000); // 5 minutes from now
   }
 
   getNextRefreshTime(): string {
@@ -250,7 +306,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
     return `${seconds}s`;
   }
 
-  // Quick stats calculations
   getTotalCalls(): number {
     return this.callsRecallsData.data.reduce((sum, item) => sum + item.value, 0);
   }

@@ -48,7 +48,8 @@
             "development": {
               "optimization": false,
               "extractLicenses": false,
-              "sourceMap": true
+              "sourceMap": true,
+              "namedChunks": true
             }
           },
           "defaultConfiguration": "production"
@@ -57,18 +58,21 @@
           "builder": "@angular-devkit/build-angular:dev-server",
           "configurations": {
             "production": {
-              "buildTarget": "dashboard-app:build:production"
+              "browserTarget": "dashboard-app:build:production"
             },
             "development": {
-              "buildTarget": "dashboard-app:build:development"
+              "browserTarget": "dashboard-app:build:development"
             }
           },
-          "defaultConfiguration": "development"
+          "defaultConfiguration": "development",
+          "options": {
+            "proxyConfig": "proxy.conf.js"
+          }
         },
         "extract-i18n": {
           "builder": "@angular-devkit/build-angular:extract-i18n",
           "options": {
-            "buildTarget": "dashboard-app:build"
+            "browserTarget": "dashboard-app:build"
           }
         },
         "test": {
@@ -86,9 +90,7 @@
             "styles": [
               "src/styles.css"
             ],
-            "scripts": [
-              "node_modules/chart.js/dist/chart.umd.js"
-            ]
+            "scripts": []
           }
         }
       }
